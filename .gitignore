@@ -37,3 +37,6 @@ config.local.*
 # Release artifacts
 *.zip
 **/releases/
+
+# Local screenshot scratch copies
+开发文档/验证截图/

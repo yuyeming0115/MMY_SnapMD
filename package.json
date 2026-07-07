@@ -10,7 +10,9 @@
     "tauri:dev": "npm --prefix MMY_SnapMD run tauri -- dev",
     "tauri:dev:image": "npm --prefix MMY_SnapMD run tauri -- dev -- render-fixtures/image-gallery.md",
     "tauri:dev:csv": "npm --prefix MMY_SnapMD run tauri -- dev -- render-fixtures/csv-sales.csv",
+    "tauri:dev:csv:edge": "npm --prefix MMY_SnapMD run tauri -- dev -- render-fixtures/csv-header-issues.csv",
     "tauri:dev:yaml": "npm --prefix MMY_SnapMD run tauri -- dev -- render-fixtures/yaml-config.yaml",
+    "tauri:dev:yaml:edge": "npm --prefix MMY_SnapMD run tauri -- dev -- render-fixtures/yaml-indent-edge.yml",
     "tauri:build": "npm --prefix MMY_SnapMD run tauri -- build",
     "tauri:build:portable": "npm --prefix MMY_SnapMD run tauri -- build --no-bundle && powershell -NoProfile -ExecutionPolicy Bypass -File tools/copy-portable.ps1"
   }

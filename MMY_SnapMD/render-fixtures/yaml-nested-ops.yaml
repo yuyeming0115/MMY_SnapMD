@@ -1,0 +1,24 @@
+app:
+  name: SnapMD
+  profile: desktop
+  features:
+    editor:
+      split: true
+      image_insert: true
+    preview:
+      formats:
+        - markdown
+        - csv
+        - yaml
+  sync:
+    watch_interval_ms: 1600
+    reload_on_clean: true
+pipelines:
+  build:
+    windows:
+      portable: true
+      installer: true
+  verify:
+    fixtures:
+      - csv-header-issues.csv
+      - yaml-indent-edge.yml

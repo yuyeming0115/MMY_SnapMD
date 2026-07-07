@@ -597,6 +597,14 @@ body.is-resizing-layout * {
   color: color-mix(in srgb, var(--text) 86%, var(--muted));
 }
 
+.source-line-warning {
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+}
+
+.source-line-error {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+
 .yaml-list-line {
   color: color-mix(in srgb, var(--success) 46%, var(--text));
 }
@@ -842,6 +850,31 @@ body.is-resizing-layout * {
 :root[data-theme='light'] .yaml-code-block {
   background: #f0f2f6;
   color: #20242a;
+}
+
+.plain-text-body.line-numbered {
+  display: grid;
+  gap: 0;
+}
+
+.plain-text-line {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: start;
+}
+
+.plain-text-gutter {
+  position: sticky;
+  left: 0;
+  padding-right: 14px;
+  color: var(--muted);
+  text-align: right;
+  user-select: none;
+  background: inherit;
+}
+
+.plain-text-content {
+  min-width: 0;
 }
 
 .json-structure,

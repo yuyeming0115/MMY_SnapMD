@@ -1,0 +1,9 @@
+root:
+   odd_indent: true
+  child_ok: yes
+	list_with_tab:
+	  - bad-tab-indent
+services:
+  api:
+    host: 127.0.0.1
+     port: 8080

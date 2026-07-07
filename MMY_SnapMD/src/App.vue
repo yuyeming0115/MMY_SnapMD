@@ -113,6 +113,7 @@ const canPrint = computed(() => canExport.value && viewMode.value !== 'edit');
 const canSave = computed(() => isTauri() && !!filePath.value && isDirty.value && !isSaving.value);
 const canFormatJson = computed(() => fileKind.value === 'json' && viewMode.value !== 'read');
 const canShowImageInsert = computed(() => fileKind.value === 'markdown' && viewMode.value !== 'read');
+const canShowTxtLineJump = computed(() => fileKind.value === 'txt');
 const canInsertImageAsset = computed(
   () => canShowImageInsert.value && isTauri() && !!filePath.value && !externalChangeDetected.value && !isInsertingImage.value
 );
@@ -713,6 +714,10 @@ function onEditorPaste(event: ClipboardEvent) {
 
 function syncEditorScroll(event: Event) {
   const editor = event.currentTarget as HTMLTextAreaElement;
+  syncEditorScrollFromElement(editor);
+}
+
+function syncEditorScrollFromElement(editor: HTMLTextAreaElement) {
   const highlightLayer = editor.previousElementSibling as HTMLElement | null;
   if (!highlightLayer?.classList.contains('source-highlight')) return;
 
@@ -1098,6 +1103,72 @@ function formatJsonSource() {
   source.value = formattedJson;
 }
 
+function jumpToTxtLine() {
+  if (!canShowTxtLineJump.value) return;
+
+  const rawValue = window.prompt(`跳转到第 1 - ${lineCount.value} 行`, '1');
+  if (rawValue === null) return;
+
+  const nextLine = Number(rawValue.trim());
+  if (!Number.isInteger(nextLine) || nextLine < 1 || nextLine > lineCount.value) {
+    showOpenError(`请输入 1 到 ${lineCount.value} 之间的行号`);
+    return;
+  }
+
+  scrollToTxtLine(nextLine);
+}
+
+function scrollToTxtLine(lineNumber: number) {
+  const previewLine = document.getElementById(`txt-line-${lineNumber}`);
+  previewLine?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+
+  if (viewMode.value === 'read') return;
+
+  const editor = sourceEditorRef.value;
+  if (!editor) return;
+
+  const lineStart = findLineStartOffset(source.value, lineNumber);
+  const lineEnd = findLineEndOffset(source.value, lineStart);
+  editor.focus();
+  editor.selectionStart = lineStart;
+  editor.selectionEnd = lineEnd;
+  const lineHeight = Number.parseFloat(window.getComputedStyle(editor).lineHeight) || 28;
+  editor.scrollTop = Math.max(0, (lineNumber - 2) * lineHeight);
+  syncEditorScrollFromElement(editor);
+}
+
+function findLineStartOffset(value: string, lineNumber: number) {
+  if (lineNumber <= 1) return 0;
+
+  let currentLine = 1;
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index];
+    if (character === '\n') {
+      currentLine += 1;
+      if (currentLine === lineNumber) return index + 1;
+      continue;
+    }
+
+    if (character === '\r') {
+      if (value[index + 1] === '\n') index += 1;
+      currentLine += 1;
+      if (currentLine === lineNumber) return index + 1;
+    }
+  }
+
+  return value.length;
+}
+
+function findLineEndOffset(value: string, start: number) {
+  for (let index = start; index < value.length; index += 1) {
+    if (value[index] === '\n' || value[index] === '\r') {
+      return index;
+    }
+  }
+
+  return value.length;
+}
+
 function printPdf() {
   if (!canPrint.value) return;
   const previousTitle = document.title;
@@ -1181,6 +1252,9 @@ function exportHtml() {
         />
         <button v-if="fileKind === 'json'" type="button" class="tool-button" :disabled="!canFormatJson" @click="formatJsonSource">
           格式化
+        </button>
+        <button v-if="canShowTxtLineJump" type="button" class="tool-button" @click="jumpToTxtLine">
+          跳行
         </button>
         <button
           type="button"

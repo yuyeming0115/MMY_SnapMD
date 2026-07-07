@@ -18,6 +18,30 @@ type OutlineItem = {
   text: string;
 };
 
+type CsvRowInfo = {
+  values: string[];
+  line: number;
+};
+
+type CsvAnalysis = {
+  rows: string[][];
+  rowInfos: CsvRowInfo[];
+  columnCount: number;
+  headers: string[];
+  diagnostics: DocumentDiagnostic[];
+  inconsistentLines: Set<number>;
+  namedHeaderCount: number;
+  unnamedHeaderIndexes: number[];
+  duplicateHeaders: Array<{ name: string; indexes: number[] }>;
+};
+
+type YamlAnalysis = {
+  outline: OutlineItem[];
+  diagnostics: DocumentDiagnostic[];
+  warningLines: Set<number>;
+  errorLines: Set<number>;
+};
+
 const DOCUMENT_EXTENSION_PATTERN = /\.(md|markdown|txt|json|csv|ya?ml)$/i;
 const JSON_OUTLINE_MAX_DEPTH = 3;
 const JSON_OUTLINE_MAX_ITEMS = 120;
@@ -71,8 +95,16 @@ export function stripKnownExtension(name: string) {
 }
 
 function renderPlainText(source: string): DocumentRenderResult {
+  const lines = source.split(/\r\n|\r|\n/);
+  const html = lines
+    .map(
+      (line, index) =>
+        `<span id="txt-line-${index + 1}" class="plain-text-line"><span class="plain-text-gutter">${index + 1}</span><span class="plain-text-content">${escapeHtml(line) || '&nbsp;'}</span></span>`
+    )
+    .join('');
+
   return {
-    html: `<pre class="plain-text-body">${escapeHtml(source)}</pre>`,
+    html: `<pre class="plain-text-body line-numbered">${html}</pre>`,
     headings: [],
     diagnostics: []
   };
@@ -105,13 +137,13 @@ function renderJson(source: string): DocumentRenderResult {
 }
 
 function renderCsv(source: string): DocumentRenderResult {
-  const result = parseCsv(source);
-  const rows = result.rows;
-  const columnCount = rows.reduce((max, row) => Math.max(max, row.length), 0);
-  const headers = rows[0] ?? [];
+  const analysis = analyzeCsv(source);
+  const rows = analysis.rows;
+  const columnCount = analysis.columnCount;
+  const headers = analysis.headers;
   const dataRows = rows.slice(1);
   const previewRows = dataRows.slice(0, CSV_PREVIEW_MAX_ROWS);
-  const diagnostics = [...result.diagnostics, ...buildCsvShapeDiagnostics(rows)];
+  const diagnostics = analysis.diagnostics;
   const outline = buildCsvOutline(headers, rows.length, columnCount);
 
   if (rows.length === 0 || columnCount === 0) {
@@ -123,14 +155,14 @@ function renderCsv(source: string): DocumentRenderResult {
   }
 
   return {
-    html: `${renderCsvSummary(rows.length, dataRows.length, columnCount, previewRows.length)}${renderCsvTable(headers, previewRows, columnCount)}`,
+    html: `${renderCsvSummary(analysis, previewRows.length)}${renderCsvTable(headers, previewRows, columnCount)}`,
     headings: outline,
     diagnostics
   };
 }
 
 function renderYaml(source: string): DocumentRenderResult {
-  const { outline, diagnostics } = buildYamlOutline(source);
+  const { outline, diagnostics } = analyzeYaml(source);
   const highlightedYaml = renderYamlSourceHighlight(source);
   const structure = renderYamlStructure(outline);
 
@@ -153,22 +185,40 @@ function highlightJson(source: string) {
 }
 
 function renderCsvSourceHighlight(source: string) {
+  const analysis = analyzeCsv(source);
+  const errorLines = new Set<number>();
+  analysis.diagnostics.forEach((diagnostic) => {
+    const matchedLine = diagnostic.message.match(/第\s*(\d+)\s*行/);
+    if (diagnostic.type === 'error' && matchedLine) {
+      errorLines.add(Number(matchedLine[1]));
+    }
+  });
+
   return source
     .split(/\r\n|\r|\n/)
     .map((line, index) => {
-      const className = index === 0 ? 'source-line csv-header-line' : 'source-line csv-row-line';
-      return `<span class="${className}">${escapeHtml(line) || '&nbsp;'}</span>`;
+      const lineNumber = index + 1;
+      const classes = [index === 0 ? 'source-line csv-header-line' : 'source-line csv-row-line'];
+      if (analysis.inconsistentLines.has(lineNumber)) {
+        classes.push('source-line-warning');
+      }
+      if (errorLines.has(lineNumber)) {
+        classes.push('source-line-error');
+      }
+      return `<span class="${classes.join(' ')}">${escapeHtml(line) || '&nbsp;'}</span>`;
     })
     .join('');
 }
 
 function renderYamlSourceHighlight(source: string) {
+  const analysis = analyzeYaml(source);
   return source
     .split(/\r\n|\r|\n/)
-    .map((line) => {
+    .map((line, index) => {
       const classes = ['source-line'];
       const trimmedLine = line.trimStart();
       let highlightedLine = escapeHtml(line);
+      const lineNumber = index + 1;
 
       if (!trimmedLine) {
         highlightedLine = '&nbsp;';
@@ -178,6 +228,13 @@ function renderYamlSourceHighlight(source: string) {
         classes.push('yaml-list-line');
       } else if (/^[^'"#][^:]*:\s*/.test(trimmedLine) || /^['"][^'"]+['"]:\s*/.test(trimmedLine)) {
         classes.push('yaml-key-line');
+      }
+
+      if (analysis.warningLines.has(lineNumber)) {
+        classes.push('source-line-warning');
+      }
+      if (analysis.errorLines.has(lineNumber)) {
+        classes.push('source-line-error');
       }
 
       highlightedLine = highlightedLine.replace(/^(\s*)(-?\s*)([^:#\n]+:)/, '$1$2<span class="yaml-key-token">$3</span>');
@@ -315,11 +372,24 @@ function buildJsonOutline(value: unknown) {
 }
 
 function parseCsv(source: string) {
-  const rows: string[][] = [];
+  const rowInfos: CsvRowInfo[] = [];
   const diagnostics: DocumentDiagnostic[] = [];
   let row: string[] = [];
   let field = '';
   let inQuotes = false;
+  let currentLine = 1;
+  let rowStartLine = 1;
+  let quotedFieldStartLine: number | null = null;
+
+  function pushCurrentRow() {
+    rowInfos.push({
+      values: row,
+      line: rowStartLine
+    });
+    row = [];
+    field = '';
+    rowStartLine = currentLine;
+  }
 
   for (let index = 0; index < source.length; index += 1) {
     const character = source[index];
@@ -331,6 +401,18 @@ function parseCsv(source: string) {
         index += 1;
       } else if (character === '"') {
         inQuotes = false;
+        quotedFieldStartLine = null;
+      } else if (character === '\n') {
+        field += character;
+        currentLine += 1;
+      } else if (character === '\r') {
+        if (nextCharacter === '\n') {
+          field += '\n';
+          index += 1;
+        } else {
+          field += '\n';
+        }
+        currentLine += 1;
       } else {
         field += character;
       }
@@ -340,6 +422,7 @@ function parseCsv(source: string) {
     if (character === '"') {
       if (field.length === 0) {
         inQuotes = true;
+        quotedFieldStartLine = currentLine;
       } else {
         field += character;
       }
@@ -354,18 +437,18 @@ function parseCsv(source: string) {
 
     if (character === '\n') {
       row.push(field);
-      rows.push(row);
-      row = [];
-      field = '';
+      pushCurrentRow();
+      currentLine += 1;
+      rowStartLine = currentLine;
       continue;
     }
 
     if (character === '\r') {
       if (nextCharacter === '\n') index += 1;
       row.push(field);
-      rows.push(row);
-      row = [];
-      field = '';
+      pushCurrentRow();
+      currentLine += 1;
+      rowStartLine = currentLine;
       continue;
     }
 
@@ -375,38 +458,97 @@ function parseCsv(source: string) {
   if (inQuotes) {
     diagnostics.push({
       type: 'error',
-      message: 'CSV 语法错误：存在未闭合的双引号字段。'
+      message: `CSV 语法错误：第 ${quotedFieldStartLine ?? rowStartLine} 行存在未闭合的双引号字段。`
     });
   }
 
   if (field.length > 0 || row.length > 0 || source.endsWith(',')) {
     row.push(field);
-    rows.push(row);
+    rowInfos.push({
+      values: row,
+      line: rowStartLine
+    });
   }
 
   return {
-    rows: rows.filter((item) => !(item.length === 1 && item[0] === '')),
+    rowInfos: rowInfos.filter((item) => !(item.values.length === 1 && item.values[0] === '')),
     diagnostics
   };
 }
 
-function buildCsvShapeDiagnostics(rows: string[][]): DocumentDiagnostic[] {
-  if (rows.length <= 1) return [];
+function analyzeCsv(source: string): CsvAnalysis {
+  const parsed = parseCsv(source);
+  const rowInfos = parsed.rowInfos;
+  const rows = rowInfos.map((item) => item.values);
+  const columnCount = rows.reduce((max, row) => Math.max(max, row.length), 0);
+  const headers = rows[0] ?? [];
+  const diagnostics = [...parsed.diagnostics];
+  const inconsistentLines = new Set<number>();
+  const unnamedHeaderIndexes: number[] = [];
+  const duplicateHeaders = collectDuplicateHeaders(headers);
+  const namedHeaderCount = headers.filter((value) => value.trim().length > 0).length;
 
-  const expectedColumns = rows[0].length;
-  const diagnostics: DocumentDiagnostic[] = [];
-
-  rows.slice(1).forEach((row, index) => {
-    if (diagnostics.length >= 5) return;
-    if (row.length !== expectedColumns) {
-      diagnostics.push({
-        type: 'warning',
-        message: `CSV 第 ${index + 2} 行列数为 ${row.length}，与表头 ${expectedColumns} 列不一致。`
-      });
+  headers.forEach((header, index) => {
+    if (!header.trim()) {
+      unnamedHeaderIndexes.push(index + 1);
     }
   });
 
-  return diagnostics;
+  if (rows.length > 1) {
+    const expectedColumns = headers.length;
+    const mismatchedRows = rowInfos
+      .slice(1)
+      .filter((item) => item.values.length !== expectedColumns);
+
+    mismatchedRows.forEach((item) => {
+      inconsistentLines.add(item.line);
+    });
+
+    if (mismatchedRows.length > 0) {
+      const preview = mismatchedRows
+        .slice(0, 3)
+        .map((item) => `第 ${item.line} 行 ${item.values.length} 列`)
+        .join('，');
+      const suffix = mismatchedRows.length > 3 ? ` 等 ${mismatchedRows.length} 行` : '';
+      diagnostics.push({
+        type: 'warning',
+        message: `CSV 列数不一致：${preview}${suffix}，表头为 ${expectedColumns} 列。`
+      });
+    }
+  }
+
+  if (unnamedHeaderIndexes.length > 0) {
+    const preview = unnamedHeaderIndexes.slice(0, 6).map((index) => `第 ${index} 列`).join('，');
+    const suffix = unnamedHeaderIndexes.length > 6 ? ' 等列' : '';
+    diagnostics.push({
+      type: 'warning',
+      message: `CSV 表头存在空列名：${preview}${suffix}。建议补齐首行列名，编辑和导出会更清晰。`
+    });
+  }
+
+  if (duplicateHeaders.length > 0) {
+    const preview = duplicateHeaders
+      .slice(0, 3)
+      .map((item) => `${item.name}（第 ${item.indexes.join(' / ')} 列）`)
+      .join('，');
+    const suffix = duplicateHeaders.length > 3 ? ' 等重复列名' : '';
+    diagnostics.push({
+      type: 'warning',
+      message: `CSV 表头存在重复列名：${preview}${suffix}。`
+    });
+  }
+
+  return {
+    rows,
+    rowInfos,
+    columnCount,
+    headers,
+    diagnostics,
+    inconsistentLines,
+    namedHeaderCount,
+    unnamedHeaderIndexes,
+    duplicateHeaders
+  };
 }
 
 function buildCsvOutline(headers: string[], rowCount: number, columnCount: number): OutlineItem[] {
@@ -429,9 +571,23 @@ function buildCsvOutline(headers: string[], rowCount: number, columnCount: numbe
   return outline;
 }
 
-function renderCsvSummary(totalRows: number, dataRows: number, columnCount: number, previewRows: number) {
+function renderCsvSummary(analysis: CsvAnalysis, previewRows: number) {
+  const totalRows = analysis.rows.length;
+  const dataRows = Math.max(0, totalRows - 1);
   const limitedLabel = dataRows > previewRows ? `，当前预览前 ${previewRows} 行` : '';
-  return `<section class="data-summary csv-summary"><h1 id="csv-summary">CSV 表格</h1><p>${dataRows} 行数据，${columnCount} 列${limitedLabel}。</p></section>`;
+  const headerSummary =
+    analysis.headers.length === 0
+      ? '首行暂无可识别表头。'
+      : `首行按表头解析，${analysis.namedHeaderCount}/${analysis.columnCount} 列已有名称。`;
+  const extraNotes = [
+    analysis.unnamedHeaderIndexes.length > 0 ? `${analysis.unnamedHeaderIndexes.length} 列未命名` : '',
+    analysis.duplicateHeaders.length > 0 ? `${analysis.duplicateHeaders.length} 组重名表头` : ''
+  ]
+    .filter(Boolean)
+    .join('，');
+  const noteLabel = extraNotes ? ` 当前发现：${extraNotes}。` : '';
+
+  return `<section class="data-summary csv-summary"><h1 id="csv-summary">CSV 表格</h1><p>${dataRows} 行数据，${analysis.columnCount} 列${limitedLabel}。</p><p>${headerSummary}${noteLabel}</p></section>`;
 }
 
 function renderCsvTable(headers: string[], rows: string[][], columnCount: number) {
@@ -449,24 +605,39 @@ function renderCsvTable(headers: string[], rows: string[][], columnCount: number
   return `<div class="data-table-scroll"><table class="data-table csv-table"><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table></div>`;
 }
 
-function buildYamlOutline(source: string) {
+function analyzeYaml(source: string): YamlAnalysis {
   const outline: OutlineItem[] = [];
   const diagnostics: DocumentDiagnostic[] = [];
   const usedIds = new Map<string, number>();
+  const warningLines = new Set<number>();
+  const errorLines = new Set<number>();
+  let looseIndentWarnings = 0;
 
   source.split(/\r\n|\r|\n/).forEach((line, index) => {
     if (outline.length >= YAML_OUTLINE_MAX_ITEMS) return;
-    if (/^\t+/.test(line)) {
+    const lineNumber = index + 1;
+    const indentToken = line.match(/^[\t ]*/)?.[0] ?? '';
+    if (indentToken.includes('\t')) {
       diagnostics.push({
         type: 'error',
-        message: `YAML 第 ${index + 1} 行使用了 Tab 缩进，建议改为空格。`
+        message: `YAML 第 ${lineNumber} 行使用了 Tab 缩进，建议改为空格。`
       });
+      errorLines.add(lineNumber);
     }
 
     const trimmedLine = line.trim();
     if (!trimmedLine || trimmedLine.startsWith('#')) return;
 
     const indent = line.match(/^ */)?.[0].length ?? 0;
+    if (indent % 2 !== 0 && looseIndentWarnings < 5) {
+      diagnostics.push({
+        type: 'warning',
+        message: `YAML 第 ${lineNumber} 行缩进为 ${indent} 个空格，不是常见的 2 空格层级。`
+      });
+      warningLines.add(lineNumber);
+      looseIndentWarnings += 1;
+    }
+
     const listMatch = trimmedLine.match(/^-\s+(.+)$/);
     const keyMatch = (listMatch?.[1] ?? trimmedLine).match(/^(['"]?)([^:'"]+)\1\s*:\s*(.*)$/);
 
@@ -474,7 +645,7 @@ function buildYamlOutline(source: string) {
       const key = keyMatch[2].trim();
       const value = keyMatch[3].trim();
       const level = Math.min(Math.floor(indent / 2) + 1, 3);
-      const id = uniqueId(`yaml-${slugify(`${index + 1}-${key}`)}`, usedIds);
+      const id = uniqueId(`yaml-${slugify(`${lineNumber}-${key}`)}`, usedIds);
       outline.push({
         id,
         level,
@@ -486,7 +657,7 @@ function buildYamlOutline(source: string) {
     if (listMatch && indent <= 4) {
       const value = listMatch[1].trim();
       outline.push({
-        id: uniqueId(`yaml-item-${index + 1}`, usedIds),
+        id: uniqueId(`yaml-item-${lineNumber}`, usedIds),
         level: Math.min(Math.floor(indent / 2) + 1, 3),
         text: `- ${truncateText(value, 48)}`
       });
@@ -500,7 +671,21 @@ function buildYamlOutline(source: string) {
     });
   }
 
-  return { outline, diagnostics };
+  return { outline, diagnostics, warningLines, errorLines };
+}
+
+function collectDuplicateHeaders(headers: string[]) {
+  const positions = new Map<string, number[]>();
+
+  headers.forEach((header, index) => {
+    const normalized = header.trim();
+    if (!normalized) return;
+    positions.set(normalized, [...(positions.get(normalized) ?? []), index + 1]);
+  });
+
+  return Array.from(positions.entries())
+    .filter(([, indexes]) => indexes.length > 1)
+    .map(([name, indexes]) => ({ name, indexes }));
 }
 
 function isJsonContainer(value: unknown): value is Record<string, unknown> | unknown[] {
