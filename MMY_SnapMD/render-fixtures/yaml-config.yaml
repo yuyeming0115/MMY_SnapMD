@@ -1,0 +1,18 @@
+# SnapMD YAML fixture
+app:
+  name: SnapMD
+  version: 0.1.0
+  features:
+    - markdown
+    - txt
+    - json
+    - csv
+    - yaml
+window:
+  width: 1180
+  height: 820
+  theme: dark
+export:
+  html: true
+  pdf: true
+  portableExe: true

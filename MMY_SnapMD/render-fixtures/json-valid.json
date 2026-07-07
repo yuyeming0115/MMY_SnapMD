@@ -1,0 +1,21 @@
+{
+  "project": "SnapMD",
+  "version": "0.2.0",
+  "features": {
+    "reader": ["markdown", "txt", "json"],
+    "editing": {
+      "manualSave": true,
+      "splitView": true
+    }
+  },
+  "checks": [
+    {
+      "name": "outline",
+      "enabled": true
+    },
+    {
+      "name": "diagnostics",
+      "enabled": true
+    }
+  ]
+}

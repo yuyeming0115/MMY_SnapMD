@@ -1,0 +1,17 @@
+{
+  "name": "mmy-snapmd-workspace",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix MMY_SnapMD run dev",
+    "build": "npm --prefix MMY_SnapMD run build",
+    "check": "npm --prefix MMY_SnapMD run build && cargo check --manifest-path MMY_SnapMD/src-tauri/Cargo.toml",
+    "cargo:check": "cargo check --manifest-path MMY_SnapMD/src-tauri/Cargo.toml",
+    "tauri": "npm --prefix MMY_SnapMD run tauri --",
+    "tauri:dev": "npm --prefix MMY_SnapMD run tauri -- dev",
+    "tauri:dev:image": "npm --prefix MMY_SnapMD run tauri -- dev -- render-fixtures/image-gallery.md",
+    "tauri:dev:csv": "npm --prefix MMY_SnapMD run tauri -- dev -- render-fixtures/csv-sales.csv",
+    "tauri:dev:yaml": "npm --prefix MMY_SnapMD run tauri -- dev -- render-fixtures/yaml-config.yaml",
+    "tauri:build": "npm --prefix MMY_SnapMD run tauri -- build",
+    "tauri:build:portable": "npm --prefix MMY_SnapMD run tauri -- build --no-bundle && powershell -NoProfile -ExecutionPolicy Bypass -File tools/copy-portable.ps1"
+  }
+}

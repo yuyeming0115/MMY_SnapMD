@@ -1,0 +1,11 @@
+SnapMD 纯文本预览样本
+
+这一行里的 # 标题 不应该被渲染为 Markdown 标题。
+这一行里的 **粗体** 也应该保持原样。
+
+缩进和空白需要保留：
+    - item one
+    - item two
+
+JSON 片段也只作为普通文本显示：
+{"name":"SnapMD","kind":"txt"}

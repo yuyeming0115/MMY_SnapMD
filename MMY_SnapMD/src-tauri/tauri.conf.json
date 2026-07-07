@@ -1,0 +1,71 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "SnapMD 闪阅",
+  "version": "0.1.0",
+  "identifier": "com.mmy.snapmd",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "SnapMD 闪阅",
+        "width": 1180,
+        "height": 820,
+        "minWidth": 860,
+        "minHeight": 620,
+        "dragDropEnabled": true
+      }
+    ],
+    "security": {
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["**"]
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "windows": {
+      "wix": {
+        "language": "zh-CN"
+      }
+    },
+    "icon": [
+      "icons/icon.ico"
+    ],
+    "fileAssociations": [
+      {
+        "ext": ["md", "markdown"],
+        "name": "Markdown Document",
+        "description": "Markdown 文档"
+      },
+      {
+        "ext": ["txt"],
+        "name": "Text Document",
+        "description": "纯文本文件"
+      },
+      {
+        "ext": ["json"],
+        "name": "JSON Document",
+        "description": "JSON 数据文件"
+      },
+      {
+        "ext": ["csv"],
+        "name": "CSV Document",
+        "description": "CSV 表格文件"
+      },
+      {
+        "ext": ["yaml", "yml"],
+        "name": "YAML Document",
+        "description": "YAML 配置文件"
+      }
+    ]
+  }
+}

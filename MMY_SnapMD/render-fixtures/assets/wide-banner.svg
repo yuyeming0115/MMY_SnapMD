@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="360" viewBox="0 0 1400 360" role="img" aria-labelledby="title desc">
+  <title id="title">SnapMD wide image fixture</title>
+  <desc id="desc">A wide banner used to verify responsive image scaling.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#5f7cff"/>
+      <stop offset="0.55" stop-color="#45c486"/>
+      <stop offset="1" stop-color="#141414"/>
+    </linearGradient>
+  </defs>
+  <rect width="1400" height="360" rx="36" fill="url(#bg)"/>
+  <circle cx="1110" cy="82" r="132" fill="rgba(255,255,255,0.15)"/>
+  <circle cx="1260" cy="248" r="96" fill="rgba(0,0,0,0.18)"/>
+  <rect x="88" y="86" width="168" height="168" rx="36" fill="rgba(255,255,255,0.18)"/>
+  <text x="172" y="190" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="86" font-weight="800" fill="#fff">S</text>
+  <text x="300" y="152" font-family="Segoe UI, Arial, sans-serif" font-size="58" font-weight="800" fill="#fff">SnapMD Image Fixture</text>
+  <text x="304" y="214" font-family="Segoe UI, Arial, sans-serif" font-size="30" fill="rgba(255,255,255,0.86)">用于验证宽图在阅读区、分屏预览和导出中的自适应缩放。</text>
+</svg>

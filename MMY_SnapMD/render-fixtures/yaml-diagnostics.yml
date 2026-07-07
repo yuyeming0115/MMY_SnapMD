@@ -1,0 +1,5 @@
+root:
+	child: tab-indented
+items:
+  - name: alpha
+  - name: beta

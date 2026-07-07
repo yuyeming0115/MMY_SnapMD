@@ -1,0 +1,39 @@
+# Dependencies
+**/node_modules/
+
+# Frontend build outputs
+**/dist/
+**/.vite/
+
+# Tauri / Rust build outputs
+**/src-tauri/target/
+**/src-tauri/gen/
+
+# Local logs and temporary files
+*.log
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Local assistant / tool state
+.claude/
+.codex/
+.workbuddy/
+
+# Local environment and secrets
+.env
+.env.*
+*.key
+*.pem
+*.p12
+*.pfx
+id_rsa*
+credentials.*
+secrets.*
+token.*
+config.local.*
+
+# Release artifacts
+*.zip
+**/releases/

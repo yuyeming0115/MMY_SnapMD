@@ -1,0 +1,13 @@
+{
+  "identifier": "default",
+  "description": "SnapMD 默认权限",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:path:default",
+    "core:event:default",
+    "core:window:default",
+    "core:webview:default",
+    "opener:default"
+  ]
+}

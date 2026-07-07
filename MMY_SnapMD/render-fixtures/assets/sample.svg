@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="240" viewBox="0 0 640 240" role="img" aria-label="SnapMD sample image">
+  <rect width="640" height="240" rx="16" fill="#202630"/>
+  <rect x="36" y="36" width="568" height="168" rx="12" fill="#f7f8fb"/>
+  <circle cx="86" cy="86" r="20" fill="#6e86ff"/>
+  <rect x="124" y="70" width="220" height="16" rx="8" fill="#20242a"/>
+  <rect x="124" y="102" width="390" height="12" rx="6" fill="#677081"/>
+  <rect x="124" y="130" width="330" height="12" rx="6" fill="#9ca5b4"/>
+  <rect x="124" y="158" width="180" height="12" rx="6" fill="#9ca5b4"/>
+</svg>

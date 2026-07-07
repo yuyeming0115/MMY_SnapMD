@@ -1,0 +1,7 @@
+date,channel,product,region,units,revenue,note
+2026-07-01,Direct,SnapMD Pro,East,18,3560,"first batch"
+2026-07-02,Partner,SnapMD Pro,North,12,2280,"contains comma, quoted"
+2026-07-03,Direct,SnapMD Lite,South,46,3220,"multi
+line note"
+2026-07-04,Marketplace,SnapMD Lite,West,39,2730,
+2026-07-05,Partner,SnapMD Team,East,8,4160,"renewal"

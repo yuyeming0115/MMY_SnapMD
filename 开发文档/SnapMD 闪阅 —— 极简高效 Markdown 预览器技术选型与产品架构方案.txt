@@ -1,0 +1,21 @@
+SnapMD | 闪阅 —— 极简高效 Markdown 预览器技术选型与产品架构方案1. 产品概述SnapMD（闪阅） 是一款主打“双击直达、轻量高效、一键分享”的 Markdown 最终效果预览工具。它旨在解决用户在日常办公、技术协作或知识管理中，需要快速查看 MD 文件最终渲染效果，而无需打开重型编辑器（如 VS Code、Obsidian）的痛点。  核心定位简单（Simple）： 无繁琐配置，聚焦“纯粹阅读”，无缝融入系统操作。  快速（Fast）： 桌面端双击系统文件秒开，冷启动时间控制在毫秒级。  高效（Efficient）： 极低的资源占用，高保真的像素级排版呈现。  分享（Share）： 内置云端分发机制，一键生成网页/小程序移动端传阅链接。  2. 核心技术选型深度对比为了实现“双击秒开”并保持界面的现代暗黑扁平化（Modern Dark Flat）高级质感，以下对三大主流技术栈进行深度技术评估：  方案 A：Tauri (Rust + Web 前端) —— ⚖️ 综合体验最佳方案原理： 底层使用 Rust 处理系统级交互（文件关联、命令行参数捕获），前端使用轻量级 Web 框架结合 marked.js 等进行渲染。  优势： 安装包极小（约 10MB - 15MB），且前端生态繁茂，支持一键接入复杂的 Markdown 插件（如 Mermaid 流程图、MathJax）。  劣势： 运行时内存（约 80MB - 120MB）略高于纯原生应用。  方案 B：Avalonia UI (C# / .NET 12) —— ⚡ 极致性能与硬核工具方案原理： 采用 C# 作为开发语言，基于 SkiaSharp 图形渲染引擎进行底层像素级绘制，彻底摆脱浏览器内核束缚。  优势： 冷启动接近原生 C++，运行时内存可压至 30MB - 50MB，且跨平台像素级一致。  劣势： Markdown 无法直接通过 HTML/CSS 渲染，需使用 Markdig 解析并动态生成 Avalonia 原生 UI 控件，开发量相对较大。  方案 C：Python (PySide6) + PyInstaller —— 🛠️ 快速开发原型方案原理： 使用 Python 绑定 Qt6 框架，利用 QWebEngineView 渲染本地 HTML。  优势： 极其适合独立开发者快速出 Demo，Python 生态内有现成的解析工具。  劣势： 打包后的单文件体积通常在 60MB - 100MB 以上，冷启动存在感知延迟。  3. 技术选型终极对决表评估维度Tauri (Rust + Vue/React)Avalonia UI (C# / .NET)PySide6 (Python)安装包体积约 10MB - 15MB约 40MB - 60MB (自包含环境)约 60MB - 100MB+运行时内存约 80MB - 120MB约 30MB - 50MB (极低)约 150MB+排版美化难度极低 (直接使用 Web CSS 生态)中等 (需调校 XAML 样式)极低 (依赖 Qt WebEngine)核心推荐指数⭐⭐⭐⭐⭐⭐⭐⭐⭐✨⭐⭐⭐4. 全局产品架构设计（包含分享、转发）由于手机端/微信小程序无法实现“双击文件调用关联程序”的操作，因此本产品架构设计为 “桌面客户端主导，全平台矩阵分发”：  桌面客户端 (核心体验)： 注册系统 .md 文件关联。双击时自动捕获命令行参数载入文件，提供现代暗黑扁平化的 UI 界面。  云端 / 分享层 (纽带)： 用户点击“分享”后，客户端将文本匿名上传至云端服务器，生成唯一的短链接或二维码。  移动接收端 (流量与分发)： 打造无状态的 H5 页面或微信小程序作为转发落地页，实现 1:1 还原桌面端的排版效果。  5. 核心逻辑实现伪代码 (以 Avalonia / C# 为例)5.1 捕获双击文件参数 (App.axaml.cs)C#public override void OnFrameworkInitializationCompleted()
+{
+    if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        // 捕获系统双击传过来的 MD 文件路径
+        string? targetFilePath = desktop.Args.FirstOrDefault(); 
+        desktop.MainWindow = new MainWindow(targetFilePath);
+    }
+    base.OnFrameworkInitializationCompleted();
+}
+5.2 解析与渲染骨架 (MainWindow.axaml.cs)C#private void LoadAndRenderMarkdown(string path)
+{
+    // 1. 读取本地文件文本
+    string mdText = File.ReadAllText(path);
+    // 2. 使用 Markdig 将 Markdown 文本转换为 HTML
+    var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+    string htmlResult = Markdown.ToHtml(mdText, pipeline);
+    // 3. 将结果呈现在界面上
+    RenderPanel.Text = htmlResult; 
+}
+6. 下一步落地建议  MVP 阶段： 优先建议选用 Tauri 或 Avalonia 12 构建单页面窗口，并打通系统文件关联闭环。  UI/UX 抛光： 采用 Modern Dark Flat 视觉风格，引入微弱毛玻璃或全黑卡片样式。  分享链打通： 搭建轻量级后端实现文本上传和移动端渲染。  
