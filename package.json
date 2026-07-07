@@ -14,6 +14,7 @@
     "tauri:dev:yaml": "npm --prefix MMY_SnapMD run tauri -- dev -- render-fixtures/yaml-config.yaml",
     "tauri:dev:yaml:edge": "npm --prefix MMY_SnapMD run tauri -- dev -- render-fixtures/yaml-indent-edge.yml",
     "tauri:build": "npm --prefix MMY_SnapMD run tauri -- build",
+    "tauri:build:mac": "npm --prefix MMY_SnapMD run tauri -- build && bash tools/copy-mac-release.sh",
     "tauri:build:portable": "npm --prefix MMY_SnapMD run tauri -- build --no-bundle && powershell -NoProfile -ExecutionPolicy Bypass -File tools/copy-portable.ps1"
   }
 }

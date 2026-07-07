@@ -466,6 +466,7 @@ md, markdown, txt, json
 | 2026-07-07 | 体验增强 | Phase 3 增加快捷键、JSON 显式格式化、内容字号控制、顶部 JSON 错误状态提示，并将文件信息改为双列紧凑布局。 |
 | 2026-07-07 | 功能落地 | 完成首轮多格式阅读与轻量编辑实现：顶部工具条、目录优先侧栏、Markdown/TXT/JSON 文档类型抽象、JSON 结构与诊断、阅读/编辑/分屏、Tauri 保存命令和样本验证。 |
 | 2026-07-07 | 规划新增 | 新增 SnapMD 多格式阅读与编辑功能迭代计划，覆盖 `.json` / `.txt` 支持、轻量编辑、顶部工具条、左侧目录优先与文件信息下沉方案。 |
+| 2026-07-07 | 打包完善 | 补齐 macOS 打包准备：新增根目录命令 `npm run tauri:build:mac`、一键脚本 `build-mac.sh`、归档脚本 `tools/copy-mac-release.sh`，统一输出 `releases/SnapMD-版本号-macos-架构.dmg` 与 `.app.zip`，并补齐 `icon.icns` 与 `tauri.macos.conf.json` 的 ad-hoc 签名配置。 |
 
 ## 十三、本轮问题经验总结（2026-07-07）
 
@@ -492,3 +493,7 @@ md, markdown, txt, json
 6. **界面截图留档要区分“可见屏幕截图”和“窗口状态留档”**
    - 直接截取屏幕像素时，如果目标窗口没有真正处在最前，就可能把别的前台窗口内容一起截进去，造成误判。
    - 当前可行做法是：先统一激活 SnapMD，再抓可见窗口截图，并把浏览器截图和 Tauri 截图放到同一目录做留档。
+
+7. **macOS 发布最好同时准备“签名策略 + 归档命名”，不要只停在能 build**
+   - 本地在 Mac 上能跑 `tauri build`，不等于已经适合放进 GitHub Releases；至少还要考虑 `.app` 怎么归档、`.dmg` 怎么统一命名、没有正式证书时如何避免直接被系统判成不可用。
+   - 当前项目采用 `tauri.macos.conf.json` 默认 ad-hoc 签名，再配合 `tools/copy-mac-release.sh` 统一生成 `SnapMD-版本号-macos-架构.dmg` 和 `.app.zip`，这样本地试包和发布留档都更稳定。

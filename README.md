@@ -34,6 +34,7 @@ npm run tauri:dev:csv:edge
 npm run tauri:dev:yaml
 npm run tauri:dev:yaml:edge
 npm run tauri:build:portable
+npm run tauri:build:mac
 ```
 
 也可以进入应用目录执行原始命令：
@@ -55,3 +56,10 @@ npm run tauri dev -- render-fixtures/image-gallery.md
 开发文档/SnapMD 闪阅 —— 界面截图验证记录.md
 verification-shots/2026-07-07/
 ```
+
+跨平台打包补充：
+
+- Windows 便携版：`npm run tauri:build:portable`
+- macOS 一键脚本：`./build-mac.sh`
+- macOS 命令行：`npm run tauri:build:mac`
+- macOS 发布归档统一输出到 `releases/`，文件名为 `SnapMD-版本号-macos-架构.dmg` 与 `SnapMD-版本号-macos-架构.app.zip`

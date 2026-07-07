@@ -90,6 +90,7 @@ verification-shots/2026-07-07/
 ## 品牌资产
 
 - 应用图标：`src-tauri/icons/icon.ico`
+- macOS 图标：`src-tauri/icons/icon.icns`
 - 图标 PNG：`assets/brand/snapmd-icon-512.png`
 - 横版 Logo：`assets/brand/snapmd-logo.svg`
 - 横版 Logo PNG：`assets/brand/snapmd-logo.png`
@@ -121,6 +122,36 @@ npm run tauri build
 ```
 
 当前 Windows 会输出 MSI 与 NSIS 安装包。WiX MSI 语言已配置为 `zh-CN`，以支持中文产品名。
+
+## macOS 打包
+
+在 macOS 终端里，可以直接执行仓库根目录的一键脚本：
+
+```bash
+./build-mac.sh
+```
+
+也可以只走命令链路：
+
+```bash
+npm run tauri:build:mac
+```
+
+当前 macOS 打包会自动完成两件事：
+
+- 生成 Tauri 原始 `.app` / `.dmg` 产物
+- 归档到仓库根目录 `../releases/`
+
+归档文件名统一为：
+
+```text
+../releases/SnapMD-0.1.0-macos-arm64.dmg
+../releases/SnapMD-0.1.0-macos-arm64.app.zip
+```
+
+其中架构后缀会根据机器自动变为 `arm64` 或 `x64`。
+
+项目已补齐 `src-tauri/icons/icon.icns`，并新增 `src-tauri/tauri.macos.conf.json`，默认使用 ad-hoc 签名，方便本地测试与 Release 附件分发；如果后续要走正式 Developer ID 签名，可在 macOS 构建环境覆盖该配置。
 
 ## 阶段边界
 
