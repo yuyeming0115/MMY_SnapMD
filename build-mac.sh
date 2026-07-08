@@ -69,8 +69,14 @@ echo "✓ 依赖安装完成"
 
 echo ""
 echo "[6/6] 执行 macOS 打包并归档到 releases/..."
-cd "$ROOT_DIR"
-npm run tauri:build:mac
+cd "$APP_DIR"
+npm run tauri build
+
+echo ""
+echo "复制发布产物到 releases/ ..."
+mkdir -p "$RELEASE_DIR"
+cp -f "$APP_DIR"/src-tauri/target/release/bundle/dmg/*.dmg "$RELEASE_DIR"/ 2>/dev/null || true
+cp -f "$APP_DIR"/src-tauri/target/release/bundle/macos/*.app.zip "$RELEASE_DIR"/ 2>/dev/null || true
 
 echo ""
 echo "========================================"

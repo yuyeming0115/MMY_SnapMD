@@ -55,24 +55,23 @@ if %errorlevel% neq 0 (
 )
 echo OK: Dependencies installed
 
-REM Build portable exe with Tauri
+REM Build app with Tauri
 echo.
-echo [5/5] Building portable exe with Tauri...
+echo [5/5] Building app with Tauri (msi + nsis installer)...
 echo This may take several minutes, please wait...
-cd /d "%~dp0"
-call npm run tauri:build:portable
-if %errorlevel% neq 0 (
-    echo ERROR: Build failed
-    pause
-    exit /b 1
-)
+cd /d "%~dp0MMY_SnapMD"
+call npm run tauri build || (echo ERROR: Build failed & pause & exit /b 1)
 
 REM Success
 echo.
 echo ========================================
-echo    Portable Build Successful!
+echo    Build Successful!
 echo ========================================
 echo.
+echo Copying installers to releases/ ...
+if not exist "%~dp0releases" mkdir "%~dp0releases"
+copy /Y "%~dp0MMY_SnapMD\src-tauri\target\release\bundle\msi\*.msi" "%~dp0releases\" >nul
+copy /Y "%~dp0MMY_SnapMD\src-tauri\target\release\bundle\nsis\*.exe" "%~dp0releases\" >nul
 echo Output location:
 echo   %~dp0releases\
 echo.

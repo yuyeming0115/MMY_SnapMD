@@ -23,18 +23,14 @@ MMY_SnapMD/render-fixtures/yaml-nested-ops.yaml
 MMY_SnapMD/render-fixtures/yaml-indent-edge.yml
 ```
 
-常用命令可在仓库根目录执行：
+常用命令需在应用目录 `MMY_SnapMD/` 内执行（该目录含 `package.json`）：
 
 ```powershell
-npm run build
-npm run cargo:check
-npm run tauri:dev:image
-npm run tauri:dev:csv
-npm run tauri:dev:csv:edge
-npm run tauri:dev:yaml
-npm run tauri:dev:yaml:edge
-npm run tauri:build:portable
-npm run tauri:build:mac
+cd MMY_SnapMD
+npm run dev          # 启动前端开发服务器（仅预览 UI）
+npm run build        # 前端类型检查 + 构建（vue-tsc + vite）
+npm run tauri dev    # 启动带桌面前端的开发模式
+npm run tauri build  # 打包桌面应用，产物在 src-tauri/target/release/bundle/
 ```
 
 也可以进入应用目录执行原始命令：
@@ -57,9 +53,16 @@ npm run tauri dev -- render-fixtures/image-gallery.md
 verification-shots/2026-07-07/
 ```
 
-跨平台打包补充：
+跨平台打包与发布：
 
-- Windows 便携版：`npm run tauri:build:portable`
-- macOS 一键脚本：`./build-mac.sh`
-- macOS 命令行：`npm run tauri:build:mac`
-- macOS 发布归档统一输出到 `releases/`，文件名为 `SnapMD-版本号-macos-架构.dmg` 与 `SnapMD-版本号-macos-架构.app.zip`
+- 一键脚本（推荐）：
+  - Windows：`build-win.bat` 或 `build-win.ps1`，打包后自动把安装包复制到 `releases/`
+  - macOS：`./build-mac.sh`（仅限 macOS 环境运行），打包后自动归档到 `releases/`
+- 手动打包（必须在 `MMY_SnapMD/` 目录内执行）：`npm run tauri build`
+  - Windows 产物：`src-tauri/target/release/bundle/{msi,nsis}/`
+  - macOS 产物：`src-tauri/target/release/bundle/{dmg,macos}/`
+- 发布新版本流程：
+  1. 同步版本号：`MMY_SnapMD/package.json`、`MMY_SnapMD/src-tauri/Cargo.toml`、`MMY_SnapMD/src-tauri/tauri.conf.json` 三处 `version` 必须一致
+  2. 提交改动并打 tag：`git tag -a vX.Y.Z -m "..."`，再 `git push origin main --tags`
+  3. 本地打包后，用 GitHub CLI 创建 Release 并上传安装包：
+     `gh release create vX.Y.Z --title "SnapMD 闪阅 vX.Y.Z" -F 说明.md "<msi 路径>" "<exe 路径>"`

@@ -54,17 +54,23 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "✓ 依赖安装完成" -ForegroundColor Green
 
-# 执行 Tauri 便携版打包
+# 执行 Tauri 打包（必须在含 package.json 的应用目录内运行）
 Write-Host ""
-Write-Host "[5/5] 开始 Tauri 便携版打包..." -ForegroundColor Yellow
+Write-Host "[5/5] 开始 Tauri 打包 (msi + nsis)..." -ForegroundColor Yellow
 Write-Host "这可能需要几分钟，请耐心等待..." -ForegroundColor Yellow
-Set-Location -Path "$PSScriptRoot"
-npm run tauri:build:portable
+Set-Location -Path "$PSScriptRoot\MMY_SnapMD"
+npm run tauri build
 if ($LASTEXITCODE -ne 0) {
     Write-Host "✗ 打包失败" -ForegroundColor Red
     Read-Host "按任意键退出"
     exit 1
 }
+
+# 复制安装包到 releases/ 归档
+$bundleDir = "$PSScriptRoot\MMY_SnapMD\src-tauri\target\release\bundle"
+if (-not (Test-Path "$PSScriptRoot\releases")) { New-Item -ItemType Directory -Path "$PSScriptRoot\releases" | Out-Null }
+Copy-Item "$bundleDir\msi\*.msi" -Destination "$PSScriptRoot\releases\" -Force
+Copy-Item "$bundleDir\nsis\*.exe" -Destination "$PSScriptRoot\releases\" -Force
 
 # 打包成功
 Write-Host ""
@@ -76,7 +82,8 @@ Write-Host "输出文件位置:" -ForegroundColor Cyan
 Write-Host "  $PSScriptRoot\releases\" -ForegroundColor White
 Write-Host ""
 Write-Host "包含以下文件:" -ForegroundColor Cyan
-Write-Host "  - SnapMD-版本号-x64.exe（免安装便携版）" -ForegroundColor White
+Write-Host "  - SnapMD 闪阅_版本号_x64_zh-CN.msi（Windows 安装包）" -ForegroundColor White
+Write-Host "  - SnapMD 闪阅_版本号_x64-setup.exe（Windows 安装器）" -ForegroundColor White
 Write-Host ""
 
 # 打开输出目录
