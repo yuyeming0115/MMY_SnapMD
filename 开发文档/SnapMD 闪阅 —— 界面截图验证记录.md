@@ -25,6 +25,7 @@
 - [browser-read.png](D:\GitWork\MMY_SnapMD\verification-shots\2026-07-07\browser-read.png)
 - [browser-edit.png](D:\GitWork\MMY_SnapMD\verification-shots\2026-07-07\browser-edit.png)
 - [browser-split.png](D:\GitWork\MMY_SnapMD\verification-shots\2026-07-07\browser-split.png)
+- [browser-history-topbar-empty.png](D:\GitWork\MMY_SnapMD\verification-shots\2026-07-08\browser-history-topbar-empty.png)
 
 ### Tauri 桌面模式
 
@@ -39,6 +40,7 @@
 | `browser-read.png` | 浏览器默认 `basic.md` | 基础阅读布局、目录、信息面板 |
 | `browser-edit.png` | 浏览器默认 `basic.md` | 编辑态高亮层与工具栏状态 |
 | `browser-split.png` | 浏览器默认 `basic.md` | 分屏比例、双栏显示、顶部按钮状态 |
+| `browser-history-topbar-empty.png` | 浏览器默认 `basic.md` | 顶部最近按钮空记录禁用状态、左侧目录不再被最近打开列表挤占 |
 | `tauri-front-visible.png` | `MMY_SnapMD/render-fixtures/basic.md` | 桌面模式下基础阅读、最近打开和文件信息 |
 | `tauri-csv-visible.png` | `MMY_SnapMD/render-fixtures/csv-header-issues.csv` | CSV 聚合诊断、表头质量提示、表格渲染 |
 | `tauri-yaml-visible.png` | `MMY_SnapMD/render-fixtures/yaml-indent-edge.yml` | YAML 语法错误状态、缩进诊断、结构目录 |
@@ -76,4 +78,5 @@
 
 | 日期 | 类型 | 内容摘要 |
 |------|------|----------|
+| 2026-07-08 | 更新 | 补充顶部历史下拉改造后的浏览器截图，确认空记录状态下顶栏“最近”按钮禁用，左侧栏只保留目录与文档信息。 |
 | 2026-07-07 | 新增 | 首版界面截图验证记录，统一留档浏览器与 Tauri 两侧关键界面截图，并标注样本对应关系与关键观察点。 |

@@ -173,6 +173,77 @@ button {
   display: none;
 }
 
+.recent-menu {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+}
+
+.recent-trigger {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 74px;
+}
+
+.recent-menu.is-open .recent-trigger {
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--line));
+  background: color-mix(in srgb, var(--accent) 16%, var(--panel-strong));
+}
+
+.recent-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  padding: 0 5px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.recent-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 30;
+  width: min(420px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 18px 42px rgb(0 0 0 / 32%);
+}
+
+.recent-dropdown-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.recent-dropdown-heading strong {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.recent-dropdown-heading button {
+  border: 0;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.recent-dropdown-heading button:hover {
+  color: var(--text);
+}
+
 .segmented-control {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -359,6 +430,10 @@ body.is-resizing-layout * {
   overflow: auto;
 }
 
+.recent-dropdown .recent-dropdown-list {
+  max-height: min(560px, calc(100vh - 170px));
+}
+
 .recent-item {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 28px;
@@ -392,13 +467,16 @@ body.is-resizing-layout * {
 }
 
 .recent-open span {
+  color: var(--muted);
   font-size: 13px;
   font-weight: 650;
+  transition: color 0.15s ease;
 }
 
 .recent-open small {
   color: var(--muted);
   font-size: 11px;
+  transition: color 0.15s ease;
 }
 
 .recent-remove {
@@ -418,8 +496,22 @@ body.is-resizing-layout * {
   border-color: color-mix(in srgb, var(--accent) 62%, var(--line));
 }
 
+.recent-open:hover span,
+.recent-item.is-current .recent-open span {
+  color: var(--text);
+}
+
+.recent-open:hover small,
+.recent-item.is-current .recent-open small {
+  color: var(--accent-strong);
+}
+
 .recent-item.is-current .recent-open {
   background: color-mix(in srgb, var(--accent) 18%, var(--panel-strong));
+}
+
+.recent-item.is-current .recent-open span {
+  color: var(--accent-strong);
 }
 
 .recent-panel p {
@@ -997,6 +1089,12 @@ body.is-resizing-layout * {
   .topbar-actions,
   .segmented-control {
     flex-wrap: wrap;
+  }
+
+  .recent-dropdown {
+    left: 0;
+    width: calc(100vw - 32px);
+    max-height: calc(100vh - 96px);
   }
 
   .workspace-shell {

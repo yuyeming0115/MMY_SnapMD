@@ -1,6 +1,6 @@
 [package]
 name = "snapmd"
-version = "0.1.0"
+version = "0.2.0"
 description = "SnapMD 闪阅 Markdown previewer"
 authors = ["MMY"]
 edition = "2021"

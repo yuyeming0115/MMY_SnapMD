@@ -46,7 +46,7 @@ const RECENT_DOCUMENTS_KEY = 'snapmd.recentDocuments';
 const CONTENT_FONT_SIZE_KEY = 'snapmd.contentFontSize';
 const SIDEBAR_WIDTH_KEY = 'snapmd.sidebarWidth';
 const SPLIT_RATIO_KEY = 'snapmd.splitEditorRatio';
-const MAX_RECENT_DOCUMENTS = 8;
+const MAX_RECENT_DOCUMENTS = 24;
 const FILE_WATCH_INTERVAL_MS = 1600;
 const SUPPORTED_DOCUMENT_ACCEPT = '.md,.markdown,.txt,.json,.csv,.yaml,.yml';
 const SUPPORTED_IMAGE_ACCEPT = 'image/png,image/jpeg,image/gif,image/webp,image/svg+xml,.png,.jpg,.jpeg,.gif,.webp,.svg';
@@ -89,13 +89,16 @@ const contentFontSize = ref(DEFAULT_CONTENT_FONT_SIZE);
 const sidebarWidth = ref(DEFAULT_SIDEBAR_WIDTH);
 const splitEditorRatio = ref(DEFAULT_SPLIT_RATIO);
 const recentDocuments = ref<RecentDocument[]>([]);
+const isRecentMenuOpen = ref(false);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const imageInputRef = ref<HTMLInputElement | null>(null);
 const sourceEditorRef = ref<HTMLTextAreaElement | null>(null);
+const recentMenuRef = ref<HTMLElement | null>(null);
 let unlistenDesktopDrop: (() => void) | undefined;
 let removeBrowserDropHandlers: (() => void) | undefined;
 let removeBeforeUnloadHandler: (() => void) | undefined;
 let removeKeyboardShortcutHandler: (() => void) | undefined;
+let removeRecentMenuDismissHandlers: (() => void) | undefined;
 let resizeState: ResizeState | null = null;
 let fileWatchTimer: number | undefined;
 let fileWatchRequestId = 0;
@@ -235,6 +238,7 @@ onMounted(() => {
   removeBrowserDropHandlers = setupBrowserDropHandlers();
   removeBeforeUnloadHandler = setupBeforeUnloadHandler();
   removeKeyboardShortcutHandler = setupKeyboardShortcutHandler();
+  removeRecentMenuDismissHandlers = setupRecentMenuDismissHandlers();
 
   if (isTauri()) {
     void setupDesktopOpenHandlers();
@@ -246,6 +250,7 @@ onBeforeUnmount(() => {
   removeBrowserDropHandlers?.();
   removeBeforeUnloadHandler?.();
   removeKeyboardShortcutHandler?.();
+  removeRecentMenuDismissHandlers?.();
   stopResize();
   stopCurrentFileWatcher();
 });
@@ -468,6 +473,20 @@ function dismissExternalChangeNotice() {
   externalChangeNoticeDismissed.value = true;
 }
 
+function toggleRecentMenu() {
+  if (!hasRecentDocuments.value) return;
+  isRecentMenuOpen.value = !isRecentMenuOpen.value;
+}
+
+function closeRecentMenu() {
+  isRecentMenuOpen.value = false;
+}
+
+async function openRecentDocument(path: string) {
+  closeRecentMenu();
+  await openFilePath(path);
+}
+
 function loadRecentDocuments() {
   try {
     const rawValue = localStorage.getItem(RECENT_DOCUMENTS_KEY);
@@ -505,11 +524,15 @@ function removeRecentDocument(path: string) {
   const nextDocuments = recentDocuments.value.filter((document) => document.path !== path);
   recentDocuments.value = nextDocuments;
   saveRecentDocuments(nextDocuments);
+  if (nextDocuments.length === 0) {
+    closeRecentMenu();
+  }
 }
 
 function clearRecentDocuments() {
   recentDocuments.value = [];
   localStorage.removeItem(RECENT_DOCUMENTS_KEY);
+  closeRecentMenu();
 }
 
 function saveRecentDocuments(documents: RecentDocument[]) {
@@ -651,6 +674,29 @@ function setupBeforeUnloadHandler() {
 
   return () => {
     window.removeEventListener('beforeunload', onBeforeUnload);
+  };
+}
+
+function setupRecentMenuDismissHandlers() {
+  const onPointerDown = (event: PointerEvent) => {
+    if (!isRecentMenuOpen.value) return;
+    const target = event.target;
+    if (target instanceof Node && recentMenuRef.value?.contains(target)) return;
+    closeRecentMenu();
+  };
+
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      closeRecentMenu();
+    }
+  };
+
+  window.addEventListener('pointerdown', onPointerDown);
+  window.addEventListener('keydown', onKeyDown);
+
+  return () => {
+    window.removeEventListener('pointerdown', onPointerDown);
+    window.removeEventListener('keydown', onKeyDown);
   };
 }
 
@@ -1215,6 +1261,62 @@ function exportHtml() {
           <input ref="fileInputRef" type="file" :accept="SUPPORTED_DOCUMENT_ACCEPT" @change="onFileInput" />
           打开
         </label>
+        <div
+          ref="recentMenuRef"
+          class="recent-menu"
+          :class="{ 'is-open': isRecentMenuOpen }"
+        >
+          <button
+            type="button"
+            class="tool-button recent-trigger"
+            :disabled="!hasRecentDocuments"
+            :aria-expanded="isRecentMenuOpen"
+            aria-haspopup="menu"
+            :title="hasRecentDocuments ? `最近打开 ${recentDocuments.length} 条` : '暂无最近打开记录'"
+            @click="toggleRecentMenu"
+          >
+            最近
+            <span v-if="hasRecentDocuments" class="recent-count">{{ recentDocuments.length }}</span>
+          </button>
+          <div
+            v-if="isRecentMenuOpen"
+            class="recent-dropdown"
+            role="menu"
+            aria-label="最近打开"
+          >
+            <div class="recent-dropdown-heading">
+              <strong>最近打开</strong>
+              <button type="button" @click="clearRecentDocuments">清空</button>
+            </div>
+            <div class="recent-list recent-dropdown-list">
+              <div
+                v-for="document in recentDocuments"
+                :key="document.path"
+                class="recent-item"
+                :class="{ 'is-current': document.path === filePath }"
+              >
+                <button
+                  type="button"
+                  class="recent-open"
+                  role="menuitem"
+                  :title="document.path"
+                  @click="openRecentDocument(document.path)"
+                >
+                  <span>{{ document.name }}</span>
+                  <small>{{ documentKindLabel(document.kind ?? detectDocumentKind(document.name)) }} · {{ formatRecentTime(document.openedAt) }}</small>
+                </button>
+                <button
+                  type="button"
+                  class="recent-remove"
+                  :aria-label="`移除 ${document.name}`"
+                  @click="removeRecentDocument(document.path)"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
         <button type="button" class="tool-button" :disabled="!canSave" @click="handleSaveButtonClick">
           保存
         </button>
@@ -1307,47 +1409,6 @@ function exportHtml() {
           </a>
           <p v-if="rendered.headings.length === 0">{{ emptyTocLabel }}</p>
         </nav>
-
-        <section class="recent-panel" aria-label="最近打开">
-          <div class="panel-heading">
-            <h2>最近打开</h2>
-            <button
-              v-if="hasRecentDocuments"
-              type="button"
-              @click="clearRecentDocuments"
-            >
-              清空
-            </button>
-          </div>
-          <div v-if="hasRecentDocuments" class="recent-list">
-            <div
-              v-for="document in recentDocuments"
-              :key="document.path"
-              class="recent-item"
-              :class="{ 'is-current': document.path === filePath }"
-            >
-              <button
-                type="button"
-                class="recent-open"
-                :title="document.path"
-                @click="openFilePath(document.path)"
-              >
-                <span>{{ document.name }}</span>
-                <small>{{ formatRecentTime(document.openedAt) }}</small>
-              </button>
-              <button
-                type="button"
-                class="recent-remove"
-                :aria-label="`移除 ${document.name}`"
-                @click="removeRecentDocument(document.path)"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-          <p v-else>暂无记录</p>
-        </section>
-
         <section class="meta-panel" :class="{ 'is-single-column': isSidebarNarrow }" aria-label="文档信息">
           <div>
             <span>文件</span>
